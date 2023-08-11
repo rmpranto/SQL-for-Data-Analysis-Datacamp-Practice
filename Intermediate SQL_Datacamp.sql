@@ -1,6 +1,6 @@
-----------------
+----------------------
 #Selecting Data-Part 1
-----------------
+----------------------
   
 #Learning to COUNT
 -------------------
@@ -282,7 +282,61 @@ select certification, release_year,title
 from films
 order by certification asc,release_year desc;
 
+-- Find the release_year and film_count of each year
+SELECT release_year, COUNT(*) AS film_count
+FROM films
+GROUP BY release_year;
+
+-- Find the release_year and average duration of films for each year
+select release_year, avg(duration) as avg_duration
+from films
+group by release_year;
+
+-- Find the release_year, country, and max_budget, then group and order by release_year and country
+select release_year,country ,max(budget) as max_budget
+from films
+group by release_year,country
+order by release_year,country;
+
+--Which release_year had the most language diversity?
+select release_year,count(distinct language) as diversity_language
+from films
+group by release_year;
+
+--Filtering grouped data(HAVING)
+--------------------------------
+-- Select the country and distinct count of certification as certification_count
+select country, count(distinct certification) as certification_count
+-- Group by country
+from films
+group by country
+-- Filter results to countries with more than 10 different certifications
+having count(distinct certification) >10;
 
 
+-- Select the country and average_budget from films
+select country, round(avg(budget),2) as average_budget
+-- Group by country
+from films 
+group by country
+-- Filter to countries with an average_budget of more than one billion
+having round(avg(budget ))>1000000000
+-- Order by descending order of the aggregated budget
+order by average_budget desc;
 
+-- Select the release_year for films released after 1990 grouped by year
+Select  release_year
+from films
+group by release_year
+having release_year >1990;
 
+-- Modify the query to also list the average budget and average gross
+SELECT release_year,AVG(budget)AS avg_budget, AVG(gross) AS avg_gross
+FROM films
+WHERE release_year > 1990
+GROUP BY release_year;
+-- Modify the query to see only years with an avg_budget of more than 60 million
+having avg(budget)>60000000;
+-- Order the results from highest to lowest average gross and limit to one
+order by avg_gross desc
+Limit 1;
