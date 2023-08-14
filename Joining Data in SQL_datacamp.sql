@@ -201,3 +201,164 @@ on p1.country_code=p2.country_code
 -- Filter such that p1.year is always five years before p2.year
 and p1.year=p2.year-5;
 
+------------------------------------------------
+Set Theory for SQL Joins- part 3
+------------------------------------------------
+-- Select all fields from economies2015
+select * from economies2015   
+-- Set operation
+union
+-- Select all fields from economies2019
+select * from economies2019
+ORDER BY code, year;
+
+	
+-- Query that determines all pairs of code and year from economies and populations, without duplicates
+select code,year
+from economies
+union
+select country_code,year
+from populations;
+
+-- Return all cities with the same name as a country
+select name
+from countries
+intersect
+select name
+from cities;
+
+-- Return all cities that do not have the same name as a country
+select name
+from cities
+except
+select name 
+from countries
+ORDER BY name;
+
+
+------------------------------------------------
+ Subqueries-part 3
+------------------------------------------------
+
+-- Select country code for countries in the Middle East
+select code,region
+from countries
+where region in(
+    select region
+    from countries
+    where region='Middle East');
+
+--Create a semi join out of the two queries you've written, which filters unique languages returned in the first query for only those languages spoken in the 'Middle East'
+SELECT DISTINCT name
+FROM languages
+-- Add syntax to use bracketed subquery below as a filter
+WHERE code IN
+  (SELECT code
+  FROM countries
+  WHERE region = 'Middle East')
+ORDER BY name;
+
+
+SELECT code, name
+FROM countries
+WHERE continent = 'Oceania'
+-- Filter for countries not included in the bracketed subquery
+  AND code NOT IN
+    (SELECT code
+    FROM currencies);
+
+--The answer from your query has now been nested into another query; use this calculation to filter populations for all records where life_expectancy is 1.15 times higher than average.
+SELECT *
+FROM populations
+-- Filter for only those populations where life expectancy is 1.15 times higher than average
+WHERE life_expectancy > 1.15 *
+  (SELECT AVG(life_expectancy)
+   FROM populations
+   WHERE year = 2015) 
+    AND year = 2015;
+
+--get the urban area population for capital cities only. You'll use the countries and cities tables displayed in the console to help identify columns of interest as you build your query.
+-- Select relevant fields from cities table
+SELECT name, country_code, urbanarea_pop
+FROM cities
+-- Filter using a subquery on the countries table
+WHERE name IN
+  (SELECT capital
+   FROM countries)
+ORDER BY urbanarea_pop DESC;
+
+
+-- Find top nine countries with the most cities
+SELECT countries.name AS country, COUNT(*) AS cities_num
+FROM countries
+LEFT JOIN cities
+ON countries.code = cities.country_code
+GROUP BY country
+-- Order by count of cities as cities_num
+ORDER BY cities_num DESC, country
+LIMIT 9;
+
+
+SELECT countries.name AS country,
+-- Subquery that provides the count of cities   
+  (SELECT COUNT(*)
+   FROM cities
+   WHERE cities.country_code = countries.code) AS cities_num
+FROM countries
+ORDER BY cities_num DESC, country
+LIMIT 9;
+
+
+-- Select local_name and lang_num from appropriate tables
+SELECT local_name, sub.lang_num
+FROM countries,
+    (SELECT code, COUNT(*) AS lang_num
+     FROM languages
+     GROUP BY code) AS sub
+-- Where codes match    
+WHERE countries.code = sub.code
+ORDER BY lang_num DESC;
+
+
+-- Select relevant fields
+select code, inflation_rate,unemployment_rate 
+from economies
+WHERE year = 2015 
+  AND code NOT IN
+-- Subquery returning country codes filtered on gov_form
+	(select code
+   from countries
+    where code = 'Republic' or code='Monarchy')
+ORDER BY inflation_rate;
+
+
+--Suppose you're interested in analyzing inflation and unemployment rate for certain countries in 2015. You are not interested in countries with "Republic" or "Monarchy" as their form of government, but are interested in all other forms of government, such as emirate federations, socialist states, and commonwealths.
+-- Select relevant fields
+SELECT code, inflation_rate, unemployment_rate
+FROM economies
+WHERE year = 2015 
+  AND code NOT IN
+-- Subquery returning country codes filtered on gov_form
+    (SELECT code
+     FROM countries
+     WHERE (gov_form LIKE '%Monarchy%' OR gov_form LIKE '%Republic%'))
+ORDER BY inflation_rate;
+
+
+
+--Your task is to determine the top 10 capital cities in Europe and the Americas by city_perc, a metric you'll calculate. city_perc is a percentage that calculates the "proper" population in a city as a percentage of the total population in the wider metro area, as follows:
+--city_proper_pop / metroarea_pop * 100Do not use table aliasing in this exercise.
+
+-- Select fields from cities
+select cities.name, country_code, city_proper_pop,metroarea_pop, city_proper_pop / metroarea_pop * 100 AS city_perc
+-- Use subquery to filter city name
+from cities
+where cities.name in
+(select capital
+from countries
+where (continent = 'Europe' OR continent LIKE '%America'))
+-- Add filter condition such that metroarea_pop does not have null values
+and metroarea_pop IS NOT NULL
+-- Sort and limit the result
+Order by city_perc desc
+limit 10
